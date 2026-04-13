@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/cedar-v/license-manage-sdk-go/models"
 )
 
 // Config aggregates all the SDK options.
@@ -38,6 +40,8 @@ type Config struct {
 	Metadata   map[string]interface{}
 
 	HTTPHeaders map[string]string
+
+	ExtraVerify func(*models.LicensePayload) error
 }
 
 // Validate performs a static sanity check on the configuration.

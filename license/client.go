@@ -137,7 +137,7 @@ func NewClient(cfg *config.Config, opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("license: collect fingerprint: %w", err)
 	}
 
-	val, err := validator.New(pubKey)
+	val, err := validator.New(pubKey, cfg.ExtraVerify)
 	if err != nil {
 		return nil, err
 	}

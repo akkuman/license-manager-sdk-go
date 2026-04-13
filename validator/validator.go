@@ -19,12 +19,21 @@ import (
 // Validator verifies license signatures & constraints.
 type Validator struct {
 	pub *rsa.PublicKey
+	extraVerify func(*models.LicensePayload) error
 }
 
 // New creates a Validator from PEM encoded RSA public key.
-func New(pemBytes []byte) (*Validator, error) {
+func New(pemBytes []byte, extraVerify func(*models.LicensePayload) error) (*Validator, error) {
 	if len(pemBytes) == 0 {
 		return nil, errors.New("validator: missing public key")
+	}
+	if extraVerify == nil {
+		extraVerify = func(payload *models.LicensePayload) error {
+			if !payload.ExpiresAt.IsZero() && time.Now().After(payload.ExpiresAt) {
+				return errors.New("validator: license expired")
+			}
+			return nil
+		}
 	}
 	block, _ := pem.Decode(pemBytes)
 	if block == nil {
@@ -38,7 +47,10 @@ func New(pemBytes []byte) (*Validator, error) {
 	if !ok {
 		return nil, errors.New("validator: public key is not RSA")
 	}
-	return &Validator{pub: pub}, nil
+	return &Validator{
+		pub: pub,
+		extraVerify: extraVerify,
+	}, nil
 }
 
 // Verify checks signature, expiration and hardware binding.
@@ -69,8 +81,8 @@ func (v *Validator) Verify(envelopeBytes []byte, fingerprint string) (*models.Li
 	if fingerprint != "" && payload.HardwareFingerprint != "" && payload.HardwareFingerprint != fingerprint {
 		return nil, errors.New("validator: hardware fingerprint mismatch")
 	}
-	if !payload.ExpiresAt.IsZero() && time.Now().After(payload.ExpiresAt) {
-		return nil, errors.New("validator: license expired")
+	if err := v.extraVerify(&payload); err != nil {
+		return nil, err
 	}
 	return &payload, nil
 }
