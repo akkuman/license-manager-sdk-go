@@ -63,7 +63,7 @@ func (c *Config) Validate() error {
 	if _, err := c.ResolvePublicKey(); err != nil {
 		return err
 	}
-	if !c.Offline {
+	if !c.Offline && (c.AuthorizationCode != "" || c.AuthorizationCodePath != "") {
 		if _, err := c.ResolveAuthorizationCode(); err != nil {
 			return err
 		}
